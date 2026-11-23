@@ -215,4 +215,14 @@ Optimistic-concurrency version checks with conflict UI; membership-checked priva
 
 ## Deployment
 
-Deploy with `npx deepspace deploy` (requires a clean commit when DeepSpace source is the authority). **This repository has not been deployed or published to GitHub yet**; no live URL is claimed here.
+* **Live app:** https://signalroom-incidents.app.space
+* **Source:** https://github.com/invisible-doctor2810/SignalRoom (private). The DeepSpace app's source authority is this GitHub repository; `npx deepspace deploy` ships the checked-out working tree.
+
+**Production verification (2026-11-23):** HTTP 200 for `/`, `/dashboard` and `/api/auth/ok`, and these browser specs passed against the live URL with two real accounts (`tests/playwright.prod.config.ts`): `incident-workspace`, `incident-collaboration` (presence incl. server eviction, deletion) and `incident-ai-report` (report + export, AI scoping). In production the AI analyst returned the handled **"needs DeepSpace AI credits"** error (`402` from the DeepSpace AI proxy for the test account); a live model answer has **not** yet been observed.
+
+```bash
+SIGNALROOM_BASE_URL=https://signalroom-incidents.app.space \
+  npx playwright test -c tests/playwright.prod.config.ts tests/incident-workspace.spec.ts
+```
+
+Production runs create `__test-…` records in the live database.

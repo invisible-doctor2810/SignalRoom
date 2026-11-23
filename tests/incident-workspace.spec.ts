@@ -124,7 +124,9 @@ test('incident workspace enforces membership and roles across two users', async 
   await dialog.getByLabel('Email').fill(member.email)
   await chooseOption(owner.page, 'Role', 'Viewer')
   await dialog.getByRole('button', { name: 'Add member' }).click()
-  await expect(owner.page.getByText(member.email)).toBeVisible({ timeout: 15_000 })
+  // Scoped to the member list: the "…was added as Viewer." toast may still show the email.
+  await expect(owner.page.getByRole('region', { name: 'Team' }).getByText(member.email, { exact: true }))
+    .toBeVisible({ timeout: 15_000 })
 
   // ── Viewer: reads everything, mutates nothing ──────────────────────────
   await member.page.reload()
