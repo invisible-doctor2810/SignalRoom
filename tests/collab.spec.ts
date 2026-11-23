@@ -31,6 +31,35 @@ test.skip(
     '--password-stdin`, or fetch existing pool accounts with `npx deepspace test accounts recover --all`.',
 )
 
+test('owner can create a persisted incident and a non-member cannot see it', async ({ users }) => {
+  const [owner, investigator] = await users([
+    'SignalRoom Owner',
+    'SignalRoom Investigator',
+  ])
+  const title = `__test-${Date.now()}__ Database outage`
+
+  await owner.page.goto('/dashboard')
+  await expect(owner.page.getByRole('heading', { name: 'Incidents' })).toBeVisible({
+    timeout: 15_000,
+  })
+  await owner.page.getByRole('button', { name: 'New incident' }).click()
+  await owner.page.getByLabel('Title').fill(title)
+  await owner.page.getByLabel('Description').fill('Database connections failed during the canary deployment.')
+  await owner.page.getByLabel('Category').fill('Database')
+  await owner.page.getByLabel('Initial incident time').fill('2026-11-22T18:00')
+  await owner.page.getByRole('button', { name: 'Create incident' }).click()
+
+  await expect(owner.page.getByText(title)).toBeVisible({ timeout: 15_000 })
+  await owner.page.reload()
+  await expect(owner.page.getByText(title)).toBeVisible({ timeout: 15_000 })
+
+  await investigator.page.goto('/dashboard')
+  await expect(investigator.page.getByRole('heading', { name: 'Incidents' })).toBeVisible({
+    timeout: 15_000,
+  })
+  await expect(investigator.page.getByText(title)).toHaveCount(0)
+})
+
 test('each browser renders its own signed-in account', async ({ users }) => {
   const [a, b] = await users(2)
 

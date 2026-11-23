@@ -3,7 +3,6 @@ import type { CollectionSchema } from 'deepspace/schema'
 export const teamMembersSchema: CollectionSchema = {
   name: 'team_members',
   uniqueOn: ['teamId', 'userId'],
-  ownerField: 'userId',
   columns: [
     { name: 'teamId', storage: 'text', interpretation: 'plain', required: true, immutable: true },
     { name: 'userId', storage: 'text', interpretation: 'plain', required: true, immutable: true },
