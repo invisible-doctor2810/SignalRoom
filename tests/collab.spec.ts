@@ -95,6 +95,12 @@ test('API status page renders loading success and error states', async ({ users 
   const [user] = await users(1)
   let shouldFail = false
   let requestCount = 0
+  // Hold successful catalog responses until the test has observed the loading
+  // state; otherwise the response can land before Playwright checks the DOM.
+  let releaseCatalog!: () => void
+  const catalogReleased = new Promise<void>((resolve) => {
+    releaseCatalog = resolve
+  })
 
   await user.page.route('**/api/integrations', async (route) => {
     requestCount += 1
@@ -107,7 +113,7 @@ test('API status page renders loading success and error states', async ({ users 
       return
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await catalogReleased
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -117,6 +123,10 @@ test('API status page renders loading success and error states', async ({ users 
 
   await user.page.goto('/api-status')
   await expect(user.page.getByText('Loading integration catalog...')).toBeVisible()
+  await expect(user.page.getByText('Integration catalog ready')).toHaveCount(0)
+
+  releaseCatalog()
+  await expect(user.page.getByText('Loading integration catalog...')).toHaveCount(0)
   await expect(user.page.getByText('Integration catalog ready')).toBeVisible()
   await expect(user.page.getByText('2 integrations available.')).toBeVisible()
 
@@ -136,9 +146,16 @@ test('API status page renders loading success and error states', async ({ users 
 test('API status page shows local retry after first-load API failure', async ({ users }) => {
   const [user] = await users(1)
   let requestCount = 0
+  // Hold the failing responses until the loading state has been observed, so
+  // the assertion never depends on how long the automatic retry delay lasts.
+  let releaseFailures!: () => void
+  const failuresReleased = new Promise<void>((resolve) => {
+    releaseFailures = resolve
+  })
 
   await user.page.route('**/api/integrations', async (route) => {
     requestCount += 1
+    await failuresReleased
     await route.fulfill({
       status: 502,
       contentType: 'application/json',
@@ -148,6 +165,9 @@ test('API status page shows local retry after first-load API failure', async ({ 
 
   await user.page.goto('/api-status')
   await expect(user.page.getByText('Loading integration catalog...')).toBeVisible()
+  await expect(user.page.getByText('Could not load API data')).toHaveCount(0)
+
+  releaseFailures()
   await expect(user.page.getByText('Could not load API data')).toBeVisible()
   await expect(user.page.getByText('Retried 1 time automatically.')).toBeVisible()
 

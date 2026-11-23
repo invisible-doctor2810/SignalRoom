@@ -39,7 +39,10 @@ export default defineConfig({
     // responses and fails setup with its own clear error at the timeout.
     url: `${BASE_URL}/api/auth/ok`,
     reuseExistingServer: false,
-    timeout: 60_000,
+    // Cold start (dependency optimization + workerd boot) can exceed 60s on a
+    // memory-constrained machine. Raise it there with
+    // SIGNALROOM_WEBSERVER_TIMEOUT_MS; the default is unchanged.
+    timeout: Number(process.env.SIGNALROOM_WEBSERVER_TIMEOUT_MS ?? 60_000),
     stdout: 'pipe',
     stderr: 'pipe',
   },
