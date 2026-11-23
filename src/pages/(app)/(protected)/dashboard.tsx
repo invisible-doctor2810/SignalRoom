@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getAuthToken, useQuery } from 'deepspace'
 import type { RecordData } from 'deepspace'
 import {
@@ -225,11 +226,15 @@ function IncidentCard({ record }: { record: RecordData<Incident> }) {
       : 'secondary'
 
   return (
-    <article className="rounded-xl border border-border bg-card p-5">
+    <article className="rounded-xl border border-border bg-card p-5 transition-colors focus-within:border-ring hover:border-ring/60">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs text-muted-foreground">{record.data.category}</p>
-          <h2 className="mt-1 text-lg font-semibold text-foreground">{record.data.title}</h2>
+          <h2 className="mt-1 text-lg font-semibold text-foreground">
+            <Link to={`/incidents/${record.data.incidentId}`} className="outline-none hover:underline focus-visible:underline">
+              {record.data.title}
+            </Link>
+          </h2>
         </div>
         <div className="flex gap-2">
           <Badge variant={severityVariant}>{record.data.severity}</Badge>

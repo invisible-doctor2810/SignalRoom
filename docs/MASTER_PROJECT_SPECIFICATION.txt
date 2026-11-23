@@ -1,0 +1,898 @@
+# MASTER ENGINEERING PROMPT — SIGNALROOM
+
+## Collaborative Incident Investigation Platform | DeepSpace Build Exercise
+You are acting as a Senior Full-Stack Engineer, Software Architect, Product Designer, and Technical Lead.
+
+Your responsibility is to architect, implement, test, and prepare a production-quality full-stack application called **SignalRoom**, built specifically for the DeepSpace developer build exercise.
+
+This is not a toy project, a landing-page exercise, or a generic CRUD application. It must demonstrate thoughtful engineering, strong product judgment, meaningful technical depth, and a genuine understanding of DeepSpace's platform capabilities.
+
+You are expected to take ownership of implementation while explaining important architectural decisions and keeping the human developer involved in meaningful technical decisions.
+
+---
+
+# 1. PRODUCT VISION
+
+## Product Name: SignalRoom
+**Tagline:** Investigate together. Establish the facts. Understand what happened.
+
+### Problem
+When a technical incident occurs, investigations often become fragmented across logs, messages, screenshots, documents, and individual team members' observations.
+
+This creates several problems:
+
+- Evidence is scattered across multiple locations.
+- Different investigators develop competing explanations.
+- Important events are missed or recorded out of order.
+- Conclusions are sometimes accepted without sufficient evidence.
+- Teams struggle to reconstruct exactly what happened.
+
+### Solution
+SignalRoom is a collaborative incident investigation platform that provides a centralized workspace for investigating incidents.
+
+Each incident has its own investigation room where authorized team members can:
+
+1. Record incident details.
+2. Collect and organize evidence.
+3. Build chronological incident timelines.
+4. Develop competing hypotheses.
+5. Associate evidence with hypotheses.
+6. Collaborate in real time.
+7. Use an AI investigation assistant.
+8. Generate a structured incident resolution report.
+
+### Core differentiator
+SignalRoom is NOT another AI chatbot.
+
+Its primary differentiator is **evidence-grounded investigation**.
+
+AI should distinguish between:
+
+- Verified facts.
+- Investigator observations.
+- AI-generated hypotheses.
+- Confirmed conclusions.
+- Unresolved questions.
+Every AI-generated factual claim must be traceable to an actual evidence record or timeline event.
+
+AI must never fabricate evidence or present speculation as an established fact.
+
+Human investigators retain control over final conclusions.
+
+---
+
+# 2. DEVELOPMENT PRIORITIES
+The submission has a five-day development window.
+
+Prioritize in this order:
+
+1. Working application architecture.
+2. Authentication and authorization.
+3. Complete incident investigation workflow.
+4. Persistent data.
+5. Real-time collaboration.
+6. AI investigation functionality.
+7. Testing and deployment.
+8. Visual refinement.
+A smaller, reliable application is preferable to an ambitious but incomplete application.
+
+Do not introduce features merely because they are technically interesting.
+
+Every feature must improve the actual investigation workflow or demonstrate a meaningful platform capability.
+
+---
+
+# 3. MANDATORY INITIAL RESEARCH
+Before writing application code, investigate DeepSpace thoroughly.
+
+Read:
+
+- Official documentation: [https://docs.deep.space/](https://docs.deep.space/)
+- Agent skill: [https://github.com/deepdotspace/deepspace-skill](https://github.com/deepdotspace/deepspace-skill)
+- Official examples: [https://github.com/deepdotspace](https://github.com/deepdotspace)
+Read the relevant agent skill instructions and inspect at least two official examples.
+
+Investigate the actual availability, APIs, limitations, and recommended implementation patterns for:
+
+- DeepSpace authentication.
+- RecordRoom and persistent records.
+- Role-based access control.
+- Real-time synchronization.
+- Presence.
+- File storage.
+- AI chat capabilities.
+- Durable Objects.
+- Worker routes.
+- Deployment.
+- Testing utilities.
+IMPORTANT:
+
+Do not assume an API exists because it sounds reasonable.
+
+Do not invent SDK methods, configuration properties, integration names, or deployment commands.
+
+Verify every DeepSpace API against the official documentation, installed package types, or official examples.
+
+Prefer native DeepSpace functionality over independently rebuilding platform infrastructure.
+
+### Initial deliverable
+Before implementing, produce:
+
+1. Architecture proposal.
+2. Technology stack.
+3. Data model.
+4. Authorization model.
+5. DeepSpace integration map.
+6. Proposed project structure.
+7. Five-day implementation plan.
+8. Identified risks and platform limitations.
+Explain why each platform integration is useful.
+
+Do not introduce unnecessary third-party services.
+
+---
+
+# 4. TECHNOLOGY STACK
+Use the official DeepSpace scaffold.
+
+Preferred application stack:
+
+- React
+- TypeScript
+- Tailwind CSS v4
+- DeepSpace SDK
+- Hono worker infrastructure, if provided by the scaffold
+- DeepSpace-native persistence
+- DeepSpace-native authentication
+- DeepSpace-native authorization
+- DeepSpace-native real-time capabilities
+- DeepSpace AI capabilities
+Use additional libraries only when they provide genuine value.
+
+Do not introduce:
+
+- An independent PostgreSQL backend without a demonstrated need.
+- Firebase or Supabase as replacements for DeepSpace.
+- An independent authentication provider.
+- Socket.IO as a replacement for DeepSpace real-time infrastructure.
+- Unnecessary microservices.
+The purpose is to demonstrate an understanding of DeepSpace, not build an entirely separate platform around it.
+
+---
+
+# 5. APPLICATION ARCHITECTURE
+Design SignalRoom around clearly separated layers.
+
+## Frontend
+Responsible for:
+
+- Authentication screens.
+- Investigation dashboard.
+- Incident creation.
+- Investigation workspace.
+- Evidence management.
+- Timeline visualization.
+- Hypothesis management.
+- AI assistant interface.
+- Resolution report.
+
+## Domain layer
+Responsible for:
+
+- Incident lifecycle.
+- Evidence relationships.
+- Hypothesis evaluation.
+- Timeline operations.
+- Membership management.
+- Investigation permissions.
+- Report generation.
+
+## DeepSpace integration layer
+Responsible for:
+
+- Authentication.
+- Persistent records.
+- Real-time updates.
+- Presence.
+- Authorization.
+- File operations.
+
+## Worker/backend layer
+Responsible for:
+
+- Validating important mutations.
+- Enforcing authorization.
+- Gathering investigation context.
+- Processing AI requests.
+- Validating AI evidence references.
+- Generating resolution reports.
+Use Durable Objects or other DeepSpace-native primitives only where their documented capabilities justify them.
+
+Avoid unnecessary architectural complexity.
+
+---
+
+# 6. DATA MODEL
+Design a normalized, understandable domain model.
+
+The following are logical entities, not assumptions about DeepSpace's exact schema syntax.
+
+### Users
+
+- id
+- name
+- email
+- avatar
+
+### Incidents
+
+- id
+- title
+- description
+- severity
+- status
+- ownerId
+- createdAt
+- updatedAt
+
+### Memberships
+
+- id
+- incidentId
+- userId
+- role
+Roles:
+
+- Owner
+- Investigator
+- Viewer
+
+### Evidence
+
+- id
+- incidentId
+- title
+- description
+- type
+- source
+- fileReference
+- createdBy
+- createdAt
+- verificationStatus
+
+### Hypotheses
+
+- id
+- incidentId
+- title
+- explanation
+- status
+- createdBy
+- createdAt
+
+### EvidenceLinks
+
+- id
+- evidenceId
+- hypothesisId
+- relationship
+Relationship types:
+
+- Supports
+- Contradicts
+- Neutral
+
+### TimelineEvents
+
+- id
+- incidentId
+- title
+- description
+- timestamp
+- createdBy
+- sourceEvidenceId
+
+### Reports
+
+- id
+- incidentId
+- summary
+- findings
+- unresolvedQuestions
+- generatedAt
+- generatedBy
+You may refine this model after inspecting DeepSpace's actual persistence capabilities.
+
+Avoid unnecessary duplication.
+
+All incident-specific entities must be associated with their parent incident.
+
+---
+
+# 7. AUTHORIZATION AND SECURITY
+This is a critical part of the project.
+
+Implement actual server-side authorization.
+
+UI visibility is not authorization.
+
+### Owner
+
+- Create and manage incidents.
+- Invite and remove members.
+- Manage roles.
+- Modify all investigation records.
+- Close incidents.
+- Generate reports.
+
+### Investigator
+
+- View assigned incidents.
+- Add and modify evidence.
+- Create hypotheses.
+- Add timeline events.
+- Collaborate with other investigators.
+- Generate proposed reports.
+
+### Viewer
+
+- Read incident information.
+- View evidence.
+- View timeline.
+- View hypotheses and reports.
+- Cannot modify investigation data.
+Requirements:
+
+- Validate membership on protected operations.
+- Prevent unauthorized access across incidents.
+- Validate role permissions server-side.
+- Protect file access.
+- Never trust client-supplied ownership information.
+- Keep secrets out of frontend bundles.
+- Validate user input.
+- Handle authorization failures gracefully.
+Test these boundaries explicitly.
+
+---
+
+# 8. CORE PRODUCT FEATURES
+Implement the following features.
+
+## A. Authentication
+Provide:
+
+- Sign-in.
+- Sign-out.
+- Protected application routes.
+- Authenticated user information.
+- Session-aware application behavior.
+Use the documented DeepSpace authentication flow.
+
+## B. Investigation Dashboard
+Display:
+
+- Total investigations.
+- Active investigations.
+- Critical incidents.
+- Resolved incidents.
+- Recent activity.
+- Assigned investigations.
+Provide:
+
+- Create investigation button.
+- Search.
+- Status filtering.
+- Severity filtering.
+- Incident cards.
+Dashboard information must come from persistent data, not hardcoded mock statistics.
+
+## C. Incident Creation
+Allow users to create incidents with:
+
+- Title.
+- Description.
+- Severity.
+- Category.
+- Initial incident timestamp.
+Incident severity:
+
+- Low.
+- Medium.
+- High.
+- Critical.
+Incident status:
+
+- Open.
+- Investigating.
+- Resolved.
+- Closed.
+
+## D. Investigation Workspace
+This is the central feature.
+
+Each incident should have a dedicated workspace.
+
+Organize it into clear sections:
+
+1. Overview.
+2. Evidence.
+3. Timeline.
+4. Hypotheses.
+5. AI Analyst.
+6. Resolution Report.
+The workspace should communicate incident status, team membership, and investigation progress.
+
+## E. Evidence Management
+Investigators should be able to:
+
+- Add evidence manually.
+- Describe observations.
+- Categorize evidence.
+- Associate evidence with hypotheses.
+- Mark evidence as verified, unverified, or disputed.
+- View evidence details.
+- Search evidence.
+Support file attachments only through a properly documented and secured storage workflow.
+
+IMPORTANT: Verify DeepSpace's actual file-sharing and authorization semantics. Do not assume a private uploader scope automatically allows other incident members to download files.
+
+If team-authorized file sharing requires additional infrastructure, document the limitation and implement a secure, appropriately scoped alternative.
+
+## F. Incident Timeline
+Provide a chronological reconstruction of events.
+
+Features:
+
+- Add events.
+- Edit events.
+- Record timestamps.
+- Associate events with evidence.
+- Display the investigator responsible.
+- Sort chronologically.
+- Highlight important events.
+Timeline events must persist.
+
+## G. Hypothesis Management
+Allow investigators to create competing explanations.
+
+Each hypothesis should contain:
+
+- Title.
+- Explanation.
+- Supporting evidence.
+- Contradicting evidence.
+- Status.
+Statuses:
+
+- Proposed.
+- Under Investigation.
+- Supported.
+- Rejected.
+- Inconclusive.
+Make the relationships between evidence and hypotheses understandable.
+
+Do not automatically mark a hypothesis as confirmed based on an AI response.
+
+## H. Real-Time Collaboration
+This is a major demonstration of DeepSpace's capabilities.
+
+Two authenticated users should be able to:
+
+1. Enter the same investigation.
+2. See each other's presence.
+3. Add timeline events.
+4. Add evidence.
+5. Create hypotheses.
+6. Observe changes without refreshing.
+Use native DeepSpace real-time functionality.
+
+Avoid unnecessary polling or custom WebSocket infrastructure.
+
+Handle concurrent modifications gracefully.
+
+Clearly distinguish persisted changes from temporary local UI state.
+
+---
+
+# 9. AI INVESTIGATION ASSISTANT
+This feature must provide genuine product value.
+
+Do not build a generic chatbot with an incident-themed system prompt.
+
+Build an investigation assistant that understands the structured context of an incident.
+
+### Context provided to the AI
+The server should retrieve:
+
+- Incident description.
+- Relevant timeline events.
+- Evidence records.
+- Existing hypotheses.
+- Evidence-hypothesis relationships.
+- Investigator observations.
+Only provide data belonging to the currently authorized incident.
+
+### AI capabilities
+The assistant should support:
+
+1. Incident summarization.
+2. Potential explanations.
+3. Supporting evidence identification.
+4. Contradicting evidence identification.
+5. Missing information detection.
+6. Suggested next investigation steps.
+7. Resolution report drafting.
+
+### Structured AI response
+Use a structured response format containing:
+
+- summary
+- establishedFacts
+- hypotheses
+- supportingEvidence
+- contradictingEvidence
+- missingInformation
+- recommendedActions
+- uncertainty
+Every evidence reference must correspond to a real evidence ID retrieved from the current incident.
+
+The backend must validate all references before presenting them as citations.
+
+AI must distinguish between:
+
+- What the evidence establishes.
+- What the evidence suggests.
+- What remains unknown.
+Never fabricate evidence, timestamps, investigators, or incident events.
+
+AI suggestions must require human review before becoming official investigation conclusions.
+
+### AI interface
+Create a dedicated analyst panel with:
+
+- Conversational interface.
+- Suggested investigation questions.
+- Structured findings.
+- Evidence references.
+- Loading states.
+- Error handling.
+- Clear distinction between suggestions and verified facts.
+Use DeepSpace-native AI capabilities wherever appropriate.
+
+If additional model configuration is required, explain it before introducing external dependencies.
+
+---
+
+# 10. RESOLUTION REPORT
+Generate a final investigation report containing:
+
+1. Incident overview.
+2. Executive summary.
+3. Verified incident timeline.
+4. Evidence reviewed.
+5. Hypotheses evaluated.
+6. Established findings.
+7. Unresolved questions.
+8. Final resolution.
+9. Investigator information.
+The report should clearly distinguish confirmed findings from unresolved explanations.
+
+Provide an export option if achievable within the deadline.
+
+---
+
+# 11. UI/UX DESIGN DIRECTION
+The application must look like a professionally designed enterprise SaaS product.
+
+Avoid generic AI-generated dashboard aesthetics.
+
+### Visual identity
+Product: SignalRoom
+
+Design language:
+
+- Dark investigative command-centre aesthetic.
+- Deep navy and charcoal surfaces.
+- Restrained cyan and violet accents.
+- Clear typography.
+- Strong information hierarchy.
+- Subtle borders and depth.
+- Carefully controlled animations.
+The application must remain readable and functional.
+
+Do not sacrifice usability for visual effects.
+
+### Layout
+Desktop:
+
+- Persistent sidebar.
+- Top navigation.
+- Main content area.
+- Contextual right-side panel where appropriate.
+Mobile:
+
+- Responsive navigation.
+- Properly stacked layouts.
+- Usable evidence and timeline views.
+- No horizontal overflow.
+
+### Design requirements
+Implement:
+
+- Consistent spacing.
+- Reusable components.
+- Consistent typography.
+- Loading skeletons.
+- Empty states.
+- Error states.
+- Confirmation dialogs for destructive actions.
+- Toast notifications.
+- Keyboard accessibility.
+- Accessible contrast.
+Avoid excessive gradients, glowing effects, unnecessary glassmorphism, and oversized dashboard cards.
+
+The result should look like a real product that a technical team could use.
+
+---
+
+# 12. CODE QUALITY
+Maintain a clean, understandable project structure.
+
+Separate:
+
+- Components.
+- Pages.
+- Hooks.
+- Services.
+- Domain types.
+- Validation.
+- DeepSpace integrations.
+- Worker routes.
+- Utilities.
+Requirements:
+
+- Strict TypeScript.
+- Avoid unnecessary `any`.
+- Avoid monolithic components.
+- Avoid duplicated business logic.
+- Centralize important validation.
+- Use meaningful names.
+- Keep functions focused.
+- Handle loading and error states.
+- Remove dead code.
+- Remove unused dependencies.
+- Keep environment variables secure.
+Do not rewrite the scaffold unnecessarily.
+
+Preserve existing project conventions unless there is a compelling technical reason to change them.
+
+---
+
+# 13. TESTING AND VERIFICATION
+Do not consider a feature finished simply because its UI renders.
+
+Test actual application behavior.
+
+### Essential tests
+Authentication:
+
+- Unauthenticated users cannot access protected workspace routes.
+- Authenticated users can access their authorized incidents.
+Persistence:
+
+- Created incidents survive refresh.
+- Evidence survives refresh.
+- Timeline events survive refresh.
+- Hypotheses survive refresh.
+Authorization:
+
+- Viewers cannot mutate records.
+- Investigators cannot manage ownership.
+- Non-members cannot access incident data.
+- Unauthorized file access is rejected.
+Collaboration:
+
+- Two users can join the same incident.
+- Changes propagate without refreshing.
+- Presence updates correctly.
+- Concurrent changes do not silently overwrite data.
+AI:
+
+- Context is scoped to the current incident.
+- Invalid evidence references are rejected.
+- AI does not invent evidence.
+- Errors are handled.
+- Findings distinguish facts from hypotheses.
+Deployment:
+
+- Production build succeeds.
+- Required environment variables are configured.
+- Live application loads.
+- Critical workflows function in production.
+Use the official DeepSpace testing tools and multi-user fixtures where available.
+
+Never claim a test passed unless it was actually executed.
+
+---
+
+# 14. FIVE-DAY DEVELOPMENT SCHEDULE
+
+## DAY 1 — Research and Foundation
+
+- Read DeepSpace documentation.
+- Read the agent skill.
+- Inspect official examples.
+- Scaffold the application.
+- Understand generated architecture.
+- Configure authentication.
+- Define data model.
+- Build the application shell.
+- Build the dashboard.
+Deliverable: A working authenticated application shell.
+
+## DAY 2 — Core Investigation
+
+- Incident creation.
+- Incident details.
+- Evidence management.
+- Timeline.
+- Hypothesis management.
+- Persistent records.
+- Role-based authorization.
+Deliverable: A functioning single-user investigation workflow.
+
+## DAY 3 — Collaboration
+
+- Real-time synchronization.
+- Presence.
+- Multi-user behavior.
+- File storage strategy.
+- Authorization testing.
+- Error handling.
+Deliverable: Two users can collaborate in the same investigation.
+
+## DAY 4 — AI Intelligence
+
+- AI investigation assistant.
+- Structured responses.
+- Evidence references.
+- Investigation summaries.
+- Missing information detection.
+- Resolution report.
+Deliverable: AI provides useful, verifiable investigation assistance.
+
+## DAY 5 — Quality and Deployment
+
+- End-to-end testing.
+- Multi-user testing.
+- Security checks.
+- Responsive design.
+- Performance review.
+- Bug fixes.
+- README.
+- Git commit.
+- DeepSpace deployment.
+Deliverable: A deployed, functional application with a clear repository and documentation.
+
+---
+
+# 15. IMPORTANT DEVELOPMENT WORKFLOW
+Work incrementally.
+
+Do not generate the entire application in one response.
+
+For each milestone:
+
+1. Explain what you intend to implement.
+2. Identify relevant DeepSpace APIs.
+3. Explain the architectural decision.
+4. Implement the feature.
+5. Run relevant checks.
+6. Inspect errors.
+7. Fix defects.
+8. Summarize changed files.
+9. Explain what the human developer should verify.
+Keep a running record of:
+
+- Completed features.
+- Outstanding features.
+- Known bugs.
+- Architectural decisions.
+- Platform limitations.
+- Required environment variables.
+- Tests executed.
+Do not silently skip difficult functionality.
+
+If a DeepSpace capability behaves differently from your assumptions, stop, inspect its actual documentation, and adjust the design.
+
+If something cannot reasonably be completed within five days, explain the limitation and implement the highest-value alternative.
+
+Never fake functionality with hardcoded data when a working implementation is expected.
+
+Demo seed data may be included, but it must be clearly separated from real application data.
+
+---
+
+# 16. HUMAN DEVELOPER INVOLVEMENT
+I am the project owner and will be responsible for understanding, explaining, and modifying the submitted application.
+
+You must not treat me as someone who simply accepts generated code.
+
+For meaningful architectural decisions:
+
+- Explain the alternatives.
+- Explain why you selected one.
+- Identify tradeoffs.
+- Point out security implications.
+- Explain how the relevant DeepSpace primitive works.
+Do not unnecessarily interrupt implementation for minor decisions.
+
+Ask me only when a decision materially affects the product, architecture, security, or project scope.
+
+I will personally verify the application and must be able to explain its architecture during a live coding interview.
+
+---
+
+# 17. FINAL SUBMISSION REQUIREMENTS
+Prepare:
+
+1. Live DeepSpace deployment URL.
+2. GitHub repository.
+3. Comprehensive README.
+4. Architecture explanation.
+5. DeepSpace integration explanation.
+6. Setup instructions.
+7. Environment variable documentation.
+8. Testing instructions.
+9. Known limitations.
+10. Future improvements.
+The README must explain:
+
+- What SignalRoom does.
+- Why it exists.
+- How its architecture works.
+- Which DeepSpace capabilities it uses.
+- Why those capabilities were selected.
+- How the AI investigation workflow works.
+- Security and authorization decisions.
+- How to run the project locally.
+- What was deliberately excluded.
+Do not claim deployment or GitHub publication until the operations have actually succeeded.
+
+---
+
+# 18. DEFINITION OF DONE
+SignalRoom is complete when:
+
+- A user can authenticate.
+- A user can create an incident.
+- An incident can contain persistent evidence.
+- Investigators can construct a timeline.
+- Investigators can create and evaluate hypotheses.
+- Different authorized users can collaborate.
+- Presence and real-time synchronization work.
+- An AI assistant can analyze structured incident context.
+- AI-generated evidence references are validated.
+- Authorization boundaries are enforced.
+- A resolution report can be produced.
+- The deployed application works on its critical path.
+- The repository is understandable.
+- The README accurately describes the implementation.
+A smaller application satisfying these requirements is better than a larger application with incomplete critical paths.
+
+---
+
+# YOUR FIRST TASK
+Do not begin coding immediately.
+
+Start by reading the official DeepSpace agent skill, documentation, and examples.
+
+Then inspect the actual development environment and produce the initial architecture proposal.
+
+I will review the proposal before we move into implementation.
+
+Your objective is not to maximize the amount of code written.
+
+Your objective is to deliver a technically sound, well-designed, fully functional application that demonstrates strong engineering judgment and a genuine understanding of DeepSpace.
+
+Let's build SignalRoom.
