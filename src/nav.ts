@@ -16,7 +16,7 @@ export interface NavItem {
 }
 
 export const nav: NavItem[] = [
-  { path: '/home', label: 'Home' },
+  // /home forwards to /dashboard (SignalRoom's home is the investigations list).
   { path: '/dashboard', label: 'Investigations' },
   { path: '/settings', label: 'Settings' },
   // The /api-status debug page still exists — add
