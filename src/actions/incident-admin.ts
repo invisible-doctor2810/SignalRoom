@@ -14,6 +14,7 @@ import {
 import { INCIDENT_CLOSED_MESSAGE } from '../domain/authorization'
 import { email, has, oneOf, recordId, requiredText, timestamp, ValidationError } from '../domain/validation'
 import { AccessError, requireIncidentAccess } from '../server/incident-access'
+import { evictFromIncidentPresence } from '../server/incident-presence'
 import { action, ensureWrite, requireNonEmptyPatch, type Params } from './shared'
 
 async function findUserIdByEmail(tools: ActionTools, address: string): Promise<string | null> {
@@ -128,7 +129,7 @@ export const incidentAdminActions: Record<string, ActionHandler<Env>> = {
   }),
 
   /** Owner changes a member's role or removes/restores them. The Owner row is immutable here. */
-  updateIncidentMember: action('updateIncidentMember', async ({ userId, params, tools }) => {
+  updateIncidentMember: action('updateIncidentMember', async ({ userId, params, tools, env }) => {
     const input = params as Params
     const incidentId = recordId(input.incidentId, 'Incident')
     const memberUserId = recordId(input.userId, 'Member')
@@ -146,6 +147,11 @@ export const incidentAdminActions: Record<string, ActionHandler<Env>> = {
     requireNonEmptyPatch(patch)
 
     ensureWrite(await tools.update('team_members', existing.id, patch), 'Failed to update member')
+    // The membership row is what revokes access; also drop any live presence
+    // sockets so the removed member disappears from the room immediately.
+    if (patch.status === 'removed') {
+      await evictFromIncidentPresence(env.PRESENCE_ROOMS, incidentId, memberUserId)
+    }
     return { success: true, data: { userId: memberUserId } }
   }),
 }

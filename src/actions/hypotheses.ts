@@ -11,7 +11,7 @@ import {
 } from '../domain/incident-model'
 import { has, oneOf, recordId, requiredText } from '../domain/validation'
 import { loadIncidentRecord, requireIncidentAccess } from '../server/incident-access'
-import { action, ensureWrite, requireNonEmptyPatch, type Params } from './shared'
+import { action, deleteAllWhere, ensureWrite, requireNonEmptyPatch, type Params } from './shared'
 
 export const hypothesisActions: Record<string, ActionHandler<Env>> = {
   createHypothesis: action('createHypothesis', async ({ userId, params, tools }) => {
@@ -46,6 +46,19 @@ export const hypothesisActions: Record<string, ActionHandler<Env>> = {
 
     ensureWrite(await tools.update('hypotheses', hypothesisId, patch), 'Failed to update hypothesis')
     return { success: true, data: { hypothesisId } }
+  }),
+
+  /** Deletes a hypothesis after removing its evidence links (no orphaned links). */
+  deleteHypothesis: action('deleteHypothesis', async ({ userId, params, tools }) => {
+    const input = params as Params
+    const incidentId = recordId(input.incidentId, 'Incident')
+    const hypothesisId = recordId(input.hypothesisId, 'Hypothesis')
+    await requireIncidentAccess(tools, userId, incidentId, 'hypothesis.write')
+    await loadIncidentRecord<HypothesisData>(tools, 'hypotheses', hypothesisId, incidentId, 'Hypothesis')
+
+    const removedLinks = await deleteAllWhere(tools, 'evidence_links', { incidentId, hypothesisId })
+    ensureWrite(await tools.remove('hypotheses', hypothesisId), 'Failed to delete hypothesis')
+    return { success: true, data: { hypothesisId, removedLinks } }
   }),
 
   /** Creates or changes the relationship between one evidence item and one hypothesis. */

@@ -1,5 +1,6 @@
 import type { ActionHandler } from 'deepspace/worker'
 import type { Env } from '../../worker'
+import { analystActions } from './analyst'
 import { evidenceActions } from './evidence'
 import { hypothesisActions } from './hypotheses'
 import { incidentAdminActions } from './incident-admin'
@@ -29,6 +30,7 @@ export const actions: Record<string, ActionHandler<Env>> = {
   ...evidenceActions,
   ...timelineActions,
   ...hypothesisActions,
+  ...analystActions,
   createIncident: async ({ userId, params, tools }) => {
     try {
       const input = params as CreateIncidentParams

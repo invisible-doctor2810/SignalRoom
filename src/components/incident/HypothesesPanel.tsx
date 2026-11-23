@@ -20,6 +20,7 @@ import {
   pairs,
 } from './fields'
 import type { IncidentWorkspace } from './useIncidentWorkspace'
+import { ConfirmDeleteButton, plural } from './ConfirmDeleteButton'
 
 export function HypothesesPanel({ workspace }: { workspace: IncidentWorkspace }) {
   const canWrite = workspace.can('hypothesis.write')
@@ -80,21 +81,7 @@ function HypothesisCard({
   onEdit: () => void
   onLink: () => void
 }) {
-  const { success, error } = useToast()
   const links = workspace.links.filter((link) => link.data.hypothesisId === record.recordId)
-
-  async function unlink(evidenceId: string) {
-    try {
-      await callAction('removeEvidenceLink', {
-        incidentId: workspace.incidentId,
-        evidenceId,
-        hypothesisId: record.recordId,
-      })
-      success('Evidence unlinked')
-    } catch (cause) {
-      error('Could not unlink evidence', cause instanceof Error ? cause.message : 'Unknown error')
-    }
-  }
 
   return (
     <article aria-label={`Hypothesis: ${record.data.title}`} className="rounded-xl border border-border bg-card p-4">
@@ -102,7 +89,20 @@ function HypothesisCard({
         <h3 className="min-w-0 break-words font-medium text-foreground">{record.data.title}</h3>
         <div className="flex items-center gap-2">
           <StatusBadge value={record.data.status} />
-          {canWrite && <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>}
+          {canWrite && (
+            <>
+              <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
+              <ConfirmDeleteButton
+                accessibleName={`Delete hypothesis ${record.data.title}`}
+                title={`Delete “${record.data.title}”?`}
+                description={`This permanently deletes the hypothesis and its ${plural(links.length, 'evidence link')}. The evidence itself is kept.`}
+                successMessage="Hypothesis deleted"
+                run={() =>
+                  callAction('deleteHypothesis', { incidentId: workspace.incidentId, hypothesisId: record.recordId })
+                }
+              />
+            </>
+          )}
         </div>
       </div>
       <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">{record.data.explanation}</p>
@@ -120,22 +120,41 @@ function HypothesisCard({
                 <p className="text-xs text-muted-foreground">None</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {group.map((link) => (
-                    <li key={link.recordId} className="flex items-center justify-between gap-2 text-sm">
-                      <span className="min-w-0 break-words text-foreground">
-                        {workspace.evidenceById.get(link.data.evidenceId)?.data.title ?? 'Unavailable evidence'}
-                      </span>
-                      {canWrite && (
-                        <button
-                          type="button"
-                          className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                          onClick={() => unlink(link.data.evidenceId)}
-                        >
-                          Unlink
-                        </button>
-                      )}
-                    </li>
-                  ))}
+                  {group.map((link) => {
+                    const evidenceTitle =
+                      workspace.evidenceById.get(link.data.evidenceId)?.data.title ?? 'Unavailable evidence'
+                    return (
+                      <li key={link.recordId} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 break-words text-foreground">{evidenceTitle}</span>
+                        {canWrite && (
+                          <ConfirmDeleteButton
+                            accessibleName={`Unlink ${evidenceTitle}`}
+                            title="Remove this evidence link?"
+                            description={`“${evidenceTitle}” will no longer be recorded as ${relationship === 'Neutral' ? 'neutral to' : relationship === 'Supports' ? 'supporting' : 'contradicting'} this hypothesis. Both records are kept.`}
+                            confirmText="Unlink"
+                            successMessage="Evidence unlinked"
+                            run={() =>
+                              callAction('removeEvidenceLink', {
+                                incidentId: workspace.incidentId,
+                                evidenceId: link.data.evidenceId,
+                                hypothesisId: record.recordId,
+                              })
+                            }
+                            trigger={(open) => (
+                              <button
+                                type="button"
+                                aria-label={`Unlink ${evidenceTitle}`}
+                                className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                                onClick={open}
+                              >
+                                Unlink
+                              </button>
+                            )}
+                          />
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
             </div>

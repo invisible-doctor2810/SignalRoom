@@ -8,7 +8,7 @@ import {
 } from '../domain/incident-model'
 import { has, oneOf, optionalText, recordId, requiredText } from '../domain/validation'
 import { loadIncidentRecord, requireIncidentAccess } from '../server/incident-access'
-import { action, ensureWrite, requireNonEmptyPatch, type Params } from './shared'
+import { action, deleteAllWhere, ensureWrite, requireNonEmptyPatch, type Params } from './shared'
 
 export const evidenceActions: Record<string, ActionHandler<Env>> = {
   createEvidence: action('createEvidence', async ({ userId, params, tools }) => {
@@ -51,5 +51,42 @@ export const evidenceActions: Record<string, ActionHandler<Env>> = {
 
     ensureWrite(await tools.update('evidence', evidenceId, patch), 'Failed to update evidence')
     return { success: true, data: { evidenceId } }
+  }),
+
+  /**
+   * Deletes evidence. Dependents are handled first so a partial failure never
+   * leaves a reference to missing evidence: its hypothesis links are removed
+   * and timeline events that cited it keep their content but lose the citation.
+   */
+  deleteEvidence: action('deleteEvidence', async ({ userId, params, tools }) => {
+    const input = params as Params
+    const incidentId = recordId(input.incidentId, 'Incident')
+    const evidenceId = recordId(input.evidenceId, 'Evidence')
+    await requireIncidentAccess(tools, userId, incidentId, 'evidence.write')
+    await loadIncidentRecord<EvidenceData>(tools, 'evidence', evidenceId, incidentId, 'Evidence')
+
+    const removedLinks = await deleteAllWhere(tools, 'evidence_links', { incidentId, evidenceId })
+
+    // Cleared events stop matching, so each round fetches the next batch.
+    let clearedTimelineReferences = 0
+    for (let round = 0; ; round += 1) {
+      if (round >= 50) throw new Error('Too many timeline references to clean up')
+      const citing = await tools.query<Record<string, unknown>>('timeline_events', {
+        where: { incidentId, sourceEvidenceId: evidenceId },
+        limit: 100,
+      })
+      if (!citing.success) throw new Error('Failed to load timeline references')
+      if (citing.data.records.length === 0) break
+      for (const event of citing.data.records) {
+        ensureWrite(
+          await tools.update('timeline_events', event.recordId, { sourceEvidenceId: '' }),
+          'Failed to clear timeline reference',
+        )
+        clearedTimelineReferences += 1
+      }
+    }
+
+    ensureWrite(await tools.remove('evidence', evidenceId), 'Failed to delete evidence')
+    return { success: true, data: { evidenceId, removedLinks, clearedTimelineReferences } }
   }),
 }

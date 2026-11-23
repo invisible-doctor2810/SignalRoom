@@ -18,7 +18,8 @@ import {
   workerErrorHandler,
   YjsRoom,
 } from 'deepspace/worker'
-import type { DOBindings, DOManifest, Job, JobContext } from 'deepspace/worker'
+import type { DOBindings, DOManifest, Job, JobContext, UserAttachment } from 'deepspace/worker'
+import { EVICT_USER_PATH, MEMBERSHIP_REVOKED_CLOSE_CODE } from './src/server/incident-presence.js'
 import { AI_CHATS_SCHEMA } from 'deepspace/schema'
 import { registerAgent } from './src/ai/agent.js'
 import { buildTools } from './src/ai/tools.js'
@@ -52,7 +53,37 @@ export class AppRecordRoom extends RecordRoom<Env> {
 
 export class AppYjsRoom extends YjsRoom<Env> {}
 export class AppCanvasRoom extends CanvasRoom<Env> {}
-export class AppPresenceRoom extends PresenceRoom<Env> {}
+/**
+ * Incident presence rooms. Adds one internal control route — reachable only
+ * through a DO stub from this worker, never from a client socket — that
+ * closes a removed member's live sockets and announces their departure.
+ */
+export class AppPresenceRoom extends PresenceRoom<Env> {
+  protected async handleInternalRequest(request: Request, url: URL): Promise<Response | null> {
+    if (url.pathname !== EVICT_USER_PATH) return super.handleInternalRequest(request, url)
+    if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+    const body = (await request.json().catch(() => ({}))) as { userId?: unknown }
+    if (typeof body.userId !== 'string' || !body.userId) {
+      return Response.json({ success: false, error: 'userId required' }, { status: 400 })
+    }
+    let closed = 0
+    for (const ws of this.state.getWebSockets()) {
+      const attachment = ws.deserializeAttachment() as UserAttachment | null
+      if (attachment?.userId !== body.userId) continue
+      // Remove the peer and broadcast the departure now; a server-initiated
+      // close does not reliably invoke webSocketClose. onDisconnect is
+      // idempotent (map delete + leave broadcast), so a later callback is harmless.
+      await this.onDisconnect(ws, attachment)
+      try {
+        ws.close(MEMBERSHIP_REVOKED_CLOSE_CODE, 'membership-revoked')
+      } catch {
+        // Already closing.
+      }
+      closed += 1
+    }
+    return Response.json({ success: true, closed })
+  }
+}
 
 /** Runs the scheduled tasks defined in src/cron.ts. */
 export class AppCronRoom extends CronRoom<Env> {

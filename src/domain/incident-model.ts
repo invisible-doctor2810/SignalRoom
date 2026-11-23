@@ -126,6 +126,13 @@ export interface IncidentMemberView {
   status: MembershipStatus
 }
 
+export const INCIDENT_PRESENCE_PREFIX = 'incident:'
+
+/** Canonical presence scope for one incident; each incident gets its own room. */
+export function incidentPresenceScope(incidentId: string): string {
+  return `${INCIDENT_PRESENCE_PREFIX}${incidentId}`
+}
+
 /** Deterministic membership record id: one row per (incident, user). */
 export function membershipRecordId(incidentId: string, userId: string): string {
   return `${incidentId}:${userId}`

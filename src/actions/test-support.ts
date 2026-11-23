@@ -74,6 +74,15 @@ export function fakeTools(db: FakeDb, actingUserId: string): ActionTools {
       if (!db.table(collection).delete(recordId)) return notFound
       return { success: true, data: { recordId } }
     },
+    async deleteWhere(collection, where, limit = 100) {
+      if (Object.keys(where).length === 0) return { success: false, error: 'where must be non-empty' }
+      const table = db.table(collection)
+      const matches = [...table.entries()]
+        .filter(([, row]) => Object.entries(where).every(([key, value]) => row.data[key] === value))
+        .slice(0, limit)
+      for (const [id] of matches) table.delete(id)
+      return { success: true, data: { deleted: matches.length } }
+    },
     async get(collection, recordId) {
       const row = db.table(collection).get(recordId)
       if (!row) return notFound
@@ -91,14 +100,34 @@ export function fakeTools(db: FakeDb, actingUserId: string): ActionTools {
   return tools as ActionTools
 }
 
+/** Records presence-room requests in place of the PRESENCE_ROOMS binding. */
+export class FakePresenceNamespace {
+  readonly requests: Array<{ room: string; path: string; body: unknown }> = []
+
+  idFromName(name: string): DurableObjectId {
+    return { name, toString: () => name, equals: () => false } as unknown as DurableObjectId
+  }
+
+  get(id: DurableObjectId) {
+    const room = (id as unknown as { name: string }).name
+    return {
+      fetch: async (request: Request) => {
+        this.requests.push({ room, path: new URL(request.url).pathname, body: await request.json() })
+        return Response.json({ success: true, closed: 1 })
+      },
+    }
+  }
+}
+
 /** Invokes a registered action exactly as the HTTP route would. */
 export async function callAs(
   db: FakeDb,
   userId: string,
   name: string,
   params: Record<string, unknown>,
+  env: Partial<Env> = {},
 ): Promise<ActionResult> {
   const handler = actions[name]
   if (!handler) throw new Error(`Unknown action ${name}`)
-  return handler({ userId, params, tools: fakeTools(db, userId), env: {} as Env, callerJwt: 'test' })
+  return handler({ userId, params, tools: fakeTools(db, userId), env: env as Env, callerJwt: 'test' })
 }

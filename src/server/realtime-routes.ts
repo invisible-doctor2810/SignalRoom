@@ -11,6 +11,8 @@ import type { Context, Hono } from 'hono'
 import { authenticatedRoomRequest, resolveAppRole, verifyJwt } from 'deepspace/worker'
 import type { JwtVerifierConfig, VerifyResult } from 'deepspace/worker'
 import type { AppContext, Env } from '../../worker.js'
+import { createActionTools } from './action-routes.js'
+import { authorizeIncidentPresence } from './incident-presence.js'
 
 function jwtConfig(env: Env): JwtVerifierConfig {
   return { publicKey: env.AUTH_JWT_PUBLIC_KEY, issuer: env.AUTH_JWT_ISSUER }
@@ -150,10 +152,24 @@ export function registerRealtimeRoutes(app: Hono<AppContext>): void {
     ),
   )
 
-  app.get(
-    '/ws/presence/:scopeId',
-    wsRoute((env) => env.PRESENCE_ROOMS),
-  )
+  // Incident presence only, and only for active members (fail closed): the
+  // JWT is verified, then incident membership is checked exactly as server
+  // actions check it, before the socket reaches the PresenceRoom.
+  app.get('/ws/presence/:scopeId', async (c) => {
+    const token = new URL(c.req.url).searchParams.get('token')
+    const auth = token ? (await verifyJwt(jwtConfig(c.env), token)).result : null
+    const decision = await authorizeIncidentPresence(
+      createActionTools(c.env, auth?.userId ?? '', token ?? ''),
+      auth?.userId ?? null,
+      c.req.param('scopeId'),
+    )
+    if (!decision.allowed) {
+      const text = decision.status === 401 ? 'Unauthorized' : decision.status === 403 ? 'Forbidden' : 'Not found'
+      return new Response(text, { status: decision.status })
+    }
+    const stub = c.env.PRESENCE_ROOMS.get(c.env.PRESENCE_ROOMS.idFromName(decision.scope))
+    return stub.fetch(authenticatedRoomRequest(c.req.raw, auth))
+  })
 
   app.get(
     '/ws/cron/:roomId',

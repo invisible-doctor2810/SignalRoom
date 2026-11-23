@@ -9,8 +9,11 @@
 
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui'
+import { AnalystPanel } from '@/components/incident/AnalystPanel'
 import { EvidencePanel } from '@/components/incident/EvidencePanel'
+import { ReportPanel } from '@/components/incident/ReportPanel'
 import { HypothesesPanel } from '@/components/incident/HypothesesPanel'
+import { IncidentPresence } from '@/components/incident/IncidentPresence'
 import { OverviewPanel } from '@/components/incident/OverviewPanel'
 import { TeamPanel } from '@/components/incident/TeamPanel'
 import { TimelinePanel } from '@/components/incident/TimelinePanel'
@@ -62,6 +65,9 @@ export default function IncidentWorkspacePage() {
             <Badge variant="info" aria-label={`Your role: ${role}`}>Your role: {role}</Badge>
           </div>
         </div>
+        <div className="mt-3">
+          <IncidentPresence incidentId={incidentId} currentUserId={workspace.currentUserId} />
+        </div>
       </header>
 
       <Tabs defaultValue="overview">
@@ -71,6 +77,8 @@ export default function IncidentWorkspacePage() {
             <TabsTrigger value="evidence">Evidence ({workspace.evidence.length})</TabsTrigger>
             <TabsTrigger value="timeline">Timeline ({workspace.timeline.length})</TabsTrigger>
             <TabsTrigger value="hypotheses">Hypotheses ({workspace.hypotheses.length})</TabsTrigger>
+            <TabsTrigger value="analyst">AI Analyst</TabsTrigger>
+            <TabsTrigger value="report">Report</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
         </div>
@@ -78,6 +86,8 @@ export default function IncidentWorkspacePage() {
         <TabsContent value="evidence" className="pt-4"><EvidencePanel workspace={workspace} /></TabsContent>
         <TabsContent value="timeline" className="pt-4"><TimelinePanel workspace={workspace} /></TabsContent>
         <TabsContent value="hypotheses" className="pt-4"><HypothesesPanel workspace={workspace} /></TabsContent>
+        <TabsContent value="analyst" className="pt-4"><AnalystPanel workspace={workspace} /></TabsContent>
+        <TabsContent value="report" className="pt-4"><ReportPanel workspace={workspace} /></TabsContent>
         <TabsContent value="team" className="pt-4"><TeamPanel workspace={workspace} /></TabsContent>
       </Tabs>
     </div>

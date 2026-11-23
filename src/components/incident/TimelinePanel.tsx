@@ -16,6 +16,7 @@ import {
   toLocalInput,
 } from './fields'
 import type { IncidentWorkspace } from './useIncidentWorkspace'
+import { ConfirmDeleteButton } from './ConfirmDeleteButton'
 
 const NO_EVIDENCE = '__none__'
 
@@ -67,7 +68,21 @@ export function TimelinePanel({ workspace }: { workspace: IncidentWorkspace }) {
                     <div className="flex items-center gap-2">
                       {important && <Badge variant="warning">Important</Badge>}
                       {canWrite && (
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(record)}>Edit</Button>
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => setEditing(record)}>Edit</Button>
+                          <ConfirmDeleteButton
+                            accessibleName={`Delete timeline event ${record.data.title}`}
+                            title={`Delete “${record.data.title}”?`}
+                            description="This permanently removes the event from the timeline. Linked evidence is not affected."
+                            successMessage="Timeline event deleted"
+                            run={() =>
+                              callAction('deleteTimelineEvent', {
+                                incidentId: workspace.incidentId,
+                                timelineEventId: record.recordId,
+                              })
+                            }
+                          />
+                        </>
                       )}
                     </div>
                   </div>

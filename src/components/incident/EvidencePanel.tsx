@@ -20,6 +20,7 @@ import {
   pairs,
 } from './fields'
 import type { IncidentWorkspace } from './useIncidentWorkspace'
+import { ConfirmDeleteButton, plural } from './ConfirmDeleteButton'
 
 type Draft = Pick<EvidenceData, 'title' | 'description' | 'type' | 'source' | 'verificationStatus'>
 
@@ -76,7 +77,10 @@ export function EvidencePanel({ workspace }: { workspace: IncidentWorkspace }) {
                   <div className="flex items-center gap-2">
                     <StatusBadge value={record.data.verificationStatus} />
                     {canWrite && (
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(record)}>Edit</Button>
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => setEditing(record)}>Edit</Button>
+                        <DeleteEvidence workspace={workspace} record={record} />
+                      </>
                     )}
                   </div>
                 </div>
@@ -100,6 +104,29 @@ export function EvidencePanel({ workspace }: { workspace: IncidentWorkspace }) {
         />
       )}
     </section>
+  )
+}
+
+function DeleteEvidence({
+  workspace,
+  record,
+}: {
+  workspace: IncidentWorkspace
+  record: RecordData<EvidenceData>
+}) {
+  const links = workspace.links.filter((link) => link.data.evidenceId === record.recordId).length
+  const citations = workspace.timeline.filter((event) => event.data.sourceEvidenceId === record.recordId).length
+  return (
+    <ConfirmDeleteButton
+      accessibleName={`Delete evidence ${record.data.title}`}
+      title={`Delete “${record.data.title}”?`}
+      description={
+        `This permanently deletes the evidence and its ${plural(links, 'hypothesis link')}. ` +
+        `${plural(citations, 'timeline event')} citing it will be kept without the citation.`
+      }
+      successMessage="Evidence deleted"
+      run={() => callAction('deleteEvidence', { incidentId: workspace.incidentId, evidenceId: record.recordId })}
+    />
   )
 }
 

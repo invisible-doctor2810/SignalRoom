@@ -17,9 +17,11 @@ export type IncidentOperation =
   | 'timeline.write'
   | 'hypothesis.write'
   | 'evidenceLink.write'
+  | 'presence.join'
 
 const POLICY: Record<IncidentOperation, readonly IncidentRole[]> = {
   'incident.read': ['Owner', 'Investigator', 'Viewer'],
+  'presence.join': ['Owner', 'Investigator', 'Viewer'],
   'members.read': ['Owner', 'Investigator', 'Viewer'],
   'incident.update': ['Owner'],
   'members.manage': ['Owner'],

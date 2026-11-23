@@ -79,4 +79,21 @@ export const timelineActions: Record<string, ActionHandler<Env>> = {
     )
     return { success: true, data: { timelineEventId } }
   }),
+
+  /** Timeline events have no dependents. */
+  deleteTimelineEvent: action('deleteTimelineEvent', async ({ userId, params, tools }) => {
+    const input = params as Params
+    const incidentId = recordId(input.incidentId, 'Incident')
+    const timelineEventId = recordId(input.timelineEventId, 'Timeline event')
+    await requireIncidentAccess(tools, userId, incidentId, 'timeline.write')
+    await loadIncidentRecord<TimelineEventData>(
+      tools,
+      'timeline_events',
+      timelineEventId,
+      incidentId,
+      'Timeline event',
+    )
+    ensureWrite(await tools.remove('timeline_events', timelineEventId), 'Failed to delete timeline event')
+    return { success: true, data: { timelineEventId } }
+  }),
 }
